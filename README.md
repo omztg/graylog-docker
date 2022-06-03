@@ -32,7 +32,7 @@ The admin interface is available at http://SERVER-IP:9000/system/inputs with a d
       - GRAYLOG_HTTP_EXTERNAL_URI=http://0.0.0.0:9000/
       - GRAYLOG_WEB_ENDPOINT_URI=http://0.0.0.0:9000/
         
-      raylog_network:
+      graylog_network:
         ipv4_address: 172.30.0.3
 ```
 
