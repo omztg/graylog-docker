@@ -1,0 +1,92 @@
+version: '3.7'
+services:
+  # MongoDB: https://hub.docker.com/_/mongo/
+  mongo:
+    image: mongo:3
+    networks:
+      graylog_network:
+        ipv4_address: 172.30.0.4
+    volumes:
+      - '/home/data/containers/mongo/data:/data/db'
+      - '/etc/localtime:/etc/localtime'  
+  # Elasticsearch: https://www.elastic.co/guide/en/elasticsearch/reference/6.x/docker.html
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:5.6.3
+    environment:
+      - http.host=0.0.0.0
+      - network.host=0.0.0.0
+      - "xpack.security.enabled=false"
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    volumes:
+      -  '/home/data/containers/elasticsearch/data:/usr/share/elasticsearch/data'
+      - '/etc/localtime:/etc/localtime'   
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+    networks:
+      graylog_network:
+        ipv4_address: 172.30.0.2
+  # Graylog: https://hub.docker.com/r/graylog/graylog/
+  graylog:
+    image: graylog/graylog:3.2
+    environment:
+      # CHANGE ME (must be at least 16 characters)!
+      - GRAYLOG_PASSWORD_SECRET=somepasswordpepper
+      # Password: admin
+      - GRAYLOG_ROOT_PASSWORD_SHA2=062c8debb921386480a39a212353695de11d4debaac831236e39825026f164992606ce666
+      - GRAYLOG_HTTP_EXTERNAL_URI=http://200.137.317.158:9000/
+      - GRAYLOG_WEB_ENDPOINT_URI=http://200.137.317.158:9000/
+      - TZ=America/Sao_Paulo
+      - GRAYLOG_ROOT_TIMEZONE=America/Sao_Paulo
+      #- GRAYLOG_SERVER_JAVA_OPTS=-Djavax.net.ssl.trustStore=/etc/graylog/server/certs/graylog-key.jks -Djavax.net.ssl.trustStorePassword=secret
+    volumes:
+      - '/home/data/containers/graylog/data:/usr/share/graylog/data/journal'
+      - '/home/data/containers/graylog/config:/usr/share/graylog/data/config'
+      - '/home/data/containers/graylog/server:/etc/graylog/server'
+      - '/etc/localtime:/etc/localtime'
+    networks:
+      graylog_network:
+        ipv4_address: 172.30.0.3
+    depends_on:
+      - mongo
+      - elasticsearch    
+    depends_on:
+      - mongo
+      - elasticsearch
+    ports:
+      # Graylog web interface and REST API
+      - '9000:9000'
+      - 5044:5044
+      - 5044:5044/udp
+      - 12200:12200/udp
+      - 5045:5045/udp
+      # Syslog TCP
+      - 1514:1514
+      # Syslog UDP
+      - 1514:1514/udp
+      # GELF TCP
+      - 12201:12201
+      # GELF UDP
+      - 12201:12201/udp
+    expose:
+      # Graylog web interface and REST API
+      - '9000'
+      - '5044'
+      # Syslog TCP
+      - '1514'
+      # Syslog UDP
+      - '1514/udp'
+      # GELF TCP
+      - '12201'
+      # GELF UDP
+      - '12201/udp'
+      - '5044/udp'
+networks:
+  graylog_network:
+    external: true
+    driver: bridge
